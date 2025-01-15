@@ -53,6 +53,7 @@ class Record extends Component {
         <h1>Mimic Recording Studio</h1>
         <TopContainer
           userName={this.name}
+          userID={this.uuid}
           route={this.props.history.push}
           show={this.state.showPopup}
           dismiss={this.dismissPopup}
@@ -366,7 +367,7 @@ class TopContainer extends Component {
               <div>
                 <h2>RECORDER</h2>
                 &nbsp;
-                <span id="sessionName">{this.props.userName}</span>
+                <span id="sessionName">{this.props.userName} / {this.props.userID}</span>
               </div>
               <div className="btn-restart" />
             </div>
