@@ -32,6 +32,14 @@ import PropTypes from 'prop-types';
 
 class Recorder extends React.Component {
 
+    constructor(props) {
+	  super(props);
+	  this.state = {
+		micName: "n/a",
+		sampleRate: 0
+	  };
+	}
+	
 	start () {
 		this.mediaRecorder.start()
 	}
@@ -83,6 +91,14 @@ class Recorder extends React.Component {
 					this.chunks = [];
 					onStop(blob)
 				};
+				
+				const streamAudioTrack = stream.getAudioTracks()[0];
+				const audioTrackSettings = streamAudioTrack.getSettings();
+				//const sampleRate = audioTrackSettings.sampleRate;
+				//console.log("Sample rate:", sampleRate);		
+				//this.setState({sampleRate: sampleRate});
+				console.log("Mic device ID:", audioTrackSettings.deviceId);
+				this.getDeviceNameById(audioTrackSettings.deviceId);
 
 				this.mediaRecorder.onerror = onErr;
 				if (onPause) this.mediaRecorder.onpause = onPause;
@@ -103,6 +119,16 @@ class Recorder extends React.Component {
 			}
 		}
 	}
+	
+	// Function to get the device name by its deviceId 
+	getDeviceNameById(deviceId) { 
+		navigator.mediaDevices.enumerateDevices().then(devices => { 
+			const device = devices.find(d => d.deviceId === deviceId && d.kind === "audioinput");
+			const deviceName = device.label ? device.label : "Unknown Device";
+			console.log("Using mic:", deviceName); 
+			this.setState({micName: deviceName});
+		})
+	}
 
 	componentDidUpdate (prevProps) {
 		if (this.props.command && this.props.command !== 'none' && prevProps.command !== this.props.command) {
@@ -115,7 +141,16 @@ class Recorder extends React.Component {
 	}
 
 	render () {
-		return false
+        return (
+            <div className="recprops-container">
+                <div className="recordeprops">
+                    <h2>PROPERTIES</h2>
+                    <div>
+                        Microphone: {this.state.micName}
+                        </div>
+                 </div>
+            </div>
+        );
 	}
 }
 
