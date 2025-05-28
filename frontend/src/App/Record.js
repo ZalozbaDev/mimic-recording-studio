@@ -31,11 +31,11 @@ class Record extends Component {
       totalTime: 0,
       totalCharLen: 0,
       audioLen: 0,
-      showPopup: true
+      showPopup: false
     };
 
-    this.uuid = getUUID();
     this.name = getName();
+    this.uuid = this.name + "_" + getUUID();
   }
 
   componentDidMount() {
@@ -50,7 +50,7 @@ class Record extends Component {
   render() {
     return (
       <div id="PageRecord">
-        <h1>Mimic Recording Studio</h1>
+        <h1>Mimic Recording Studio: {this.uuid}</h1>
         <TopContainer
           userName={this.name}
           userID={this.uuid}
@@ -367,7 +367,7 @@ class TopContainer extends Component {
               <div>
                 <h2>RECORDER</h2>
                 &nbsp;
-                <span id="sessionName">{this.props.userName} / {this.props.userID}</span>
+                <span id="sessionName">{this.props.userName}_{this.props.userID}</span>
               </div>
               <div className="btn-restart" />
             </div>

@@ -211,8 +211,23 @@ hr {
   padding-bottom: 10px;
 }
 
+.recprops-container {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding-bottom: 10px;
+}
+
 .total-hours {
   margin: 0px 30px 0px 0px;
+  padding: 20px 50px 20px 50px;
+  background-color: #f1f3f4;
+  border-radius: 6px;
+  flex: 1;
+}
+
+.recordeprops {
+  margin: 0px 0px 0px 0px;
   padding: 20px 50px 20px 50px;
   background-color: #f1f3f4;
   border-radius: 6px;
@@ -259,6 +274,12 @@ hr {
 
 .btn_PageIntro {
 	max-width: 150px;
+	margin: 20px;
+}
+
+.btn_PageIntroForget {
+	max-width: 150px;
+	margin: 20px;
 }
 
 .btn {
@@ -428,6 +449,20 @@ background-color: #0094E5;
   background-color: #f1f3f4;
   /* display: block; */
 	margin-bottom: 16px;
+	margin-right: 16px;
+	color: #2C3E50;
+}
+
+#yourdate {
+  font-size: 1em;
+  padding: 16px;
+  width: 320px;
+  border: 0px;
+  border-radius: 4px;
+  /* text-align: center; */
+  background-color: #f1f3f4;
+  /* display: block; */
+	margin-bottom: 16px;
 	color: #2C3E50;
 }
 
@@ -574,7 +609,7 @@ input::placeholder {
 
 canvas {
   display: inline-block;
-  background: #222222;
+  background: #666666;
   /* height: 100%; */
   /* padding: 0px;
   margin: 0; */

@@ -1,13 +1,14 @@
 import React, { Component } from "react";
 // import { history } from "react-router-dom";
-import { getName, saveName } from "./api/localstorage";
+import { getName, saveName, getUUID, saveUUID, removeData } from "./api/localstorage";
 
 class Intro extends Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      name: undefined
+      name: undefined,
+      uuid: undefined
     };
   }
 
@@ -15,6 +16,10 @@ class Intro extends Component {
     const name = getName();
     if (name) {
       this.setState({ name });
+    }
+    const uuid = getUUID();
+    if (uuid) {
+      this.setState({ uuid });
     }
   }
 
@@ -37,72 +42,7 @@ class Intro extends Component {
             for Mimic.
           </p>
 
-          <div className="instructions">
-            <i className="fas fa-book-open" />
-            <h2>guide</h2>
-            <p>
-              Mimic II preserves the rhythm, tone and pronunciation from source
-              recordings. As a result, it is important for all recordings to use
-              a consistent voice for the personality of the final product.
-            </p>
-
-            <p>
-              To help with this, adopt the assistant persona for all recordings:
-            </p>
-
-            <ul className="persona-desc">
-              <li>
-                <span className="li-title">
-                  The assistant is knowledgeable and confident, yet humble.
-                </span>
-                <br /> The assistant has access to all the world's information,
-                but is aware of his or her own limitations, and doesn't mind
-                being corrected.
-              </li>
-              <li>
-                <span className="li-title">
-                  The assistant loves knowledge and enjoys sharing information
-                  with others.
-                </span>
-                <br /> This enjoyment can be clearly heard in the energy and
-                enthusiasm in his or her voice.
-              </li>
-              <li>
-                <span className="li-title">
-                  The assistant is persistent, optimistic and upbeat.
-                </span>
-                <br /> Even if there are errors or misunderstandings, the tone
-                should be positive, without any sign of frustration.
-              </li>
-              <li>
-                <span className="li-title">
-                  The assistant is professional without being stiff or overly
-                  formal.
-                </span>
-                <br /> The assistant speaks with an efficient, yet unrushed
-                pace, similar to what you might hear from a news anchor.
-              </li>
-            </ul>
-
-            <hr></hr>
-            <p>
-              In addition please follow these advices for your voice recordings:
-            </p>
-            <ul className="persona-desc">
-              <li><b>Use a good microphone and a quiet recording room setup</b> (no computers fans, air conditioning, ...).</li>
-              <li>Use a text corpus with cleaned numbers/abbreviations and good phoneme coverage.</li>
-              <li>Read neutral, but with a natural speech flow and do not swallow up letters.</li>
-              <li>Adjust tone and pitch with punctuations.</li>
-              <li>Use a constant recording speed.</li>
-              <li>Check your recordings regularly in high volume for background noise.</li>
-              <li>Make breaks regualarly and do not record more than four hours a day.</li>
-              <li>Record error free.</li>
-              </ul>
-
-              <span className="li-title">Happy recording :-)</span>
-
-          </div>
-          {getName() ? this.renderWelcomeBackMsg() : this.renderInput()}
+          {getUUID() ? this.renderWelcomeBackMsg() : this.renderInput()}
           <div className="btn_PageIntro">
             <button
               id="btn_PageIntro"
@@ -112,20 +52,47 @@ class Intro extends Component {
             Record
             </button>
           </div>
+          {this.renderForget()}
         </div>
       </div>
     );
   }
+  
+  renderForget = () => {
+  	  return (
+  		(() => {
+			if ((this.state.name !== undefined) || (this.state.uuid !== undefined)) {
+				return (
+				<div className="btn_PageIntroForget">
+				<button
+				  id="btn_PageIntroForget"
+				  className="btn"
+				  onClick={this.handleForget}
+				>
+				Forget
+				</button>
+                </div>
+				);
+			}
+		})()
+	);
+  };  
 
   renderInput = () => {
     return (
       <div>
-        <p>To get started, enter your name and hit the Record button.</p>
+        <p>To get started, enter your name and date and hit the Record button.</p>
         <input
           type="text"
           id="yourname"
-          placeholder="Your Name"
+          placeholder="e.g. hilzaneplic"
           onChange={this.handleInput}
+        />
+        <input
+          type="text"
+          id="yourdate"
+          placeholder="e.g. 1945-07-12"
+          onChange={this.handleDate}
         />
       </div>
     );
@@ -134,8 +101,9 @@ class Intro extends Component {
   renderWelcomeBackMsg = () => {
     return (
       <div>
-        <p>Welcome back {this.state.name}!</p>
-        <p>Hit Train Mimic to continue recording</p>
+        <p>Welcome back {this.state.name}_{this.state.uuid}!</p>
+        <p>Hit RECORD to continue recording</p>
+        <p>Hit FORGET to enter different name and date</p>
       </div>
     );
   };
@@ -144,14 +112,26 @@ class Intro extends Component {
     this.setState({ name: e.target.value });
   };
 
+  handleDate = e => {
+    this.setState({ uuid: e.target.value });
+  };
+
   handleTrainMimicBtn = () => {
-    if (this.state.name === undefined) {
-      alert("Please input a name before proceeding!");
+    if ((this.state.name === undefined) || (this.state.uuid === undefined)) {
+      alert("Please input a name and date before proceeding!");
     } else {
 	  saveName(this.state.name);
+	  saveUUID(this.state.uuid);
 	  this.props.history.push('/record')
     }
   };
+  
+  handleForget = () => {
+  	  this.setState({ name: undefined })
+  	  this.setState({ uuid: undefined })
+  	  removeData();
+  };
+
 }
 
 export default Intro;
