@@ -60,6 +60,13 @@ class Audio(MethodView):
             return jsonify(success=True, data=res.data)
         else:
             return jsonify(success=False, message="error occured in server")
+        
+    def get_audio(self, audio_id: str, uuid: str) -> jsonify:
+        res = audio_api.get_audio(audio_id, uuid)
+        if res.success:
+            return jsonify(success=True, data=res.data)
+        else:
+            return jsonify(success=False, message=res.message)
 
     def post(self):
         data = request.data
@@ -76,12 +83,27 @@ class Audio(MethodView):
                 message="missing prompt or uuid query param"
             )
 
+    def get(self):
+        """Handle GET requests to retrieve audio data."""
+        audio_id = request.args.get('audio_id')
+        uuid = request.args.get('uuid')
+        if audio_id and uuid:
+            return self.get_audio(audio_id, uuid)
+        else:
+            return jsonify(
+                success=False,
+                message="missing audio_id or uuid query param"
+            )
+
 
 class Prompts(MethodView):
 
     def get(self):
         uuid = request.args.get('uuid')
-        prompts = prompt_api.get_prompt(uuid)
+        idx = request.args.get("idx")
+        if idx == None:
+            idx = 0
+        prompts = prompt_api.get_prompt(uuid, idx)
         if prompts.success:
             return jsonify(success=True, data=prompts.data)
         else:
