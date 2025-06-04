@@ -40,7 +40,6 @@ class Wave extends Component {
   }
 
   loadWaveForm = (blob) => {
-    console.log("Loading waveform with blob", blob);
     this.wavesurfer.loadBlob(blob);
   };
 }

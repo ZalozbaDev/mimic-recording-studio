@@ -40,6 +40,7 @@ class Record extends Component {
       audioLen: 0,
       showPopup: false,
       backIdx: 0,
+      maxLoudnessDb: null,
     };
 
     this.name = getName();
@@ -71,6 +72,7 @@ class Record extends Component {
           totalCharLen={this.state.totalCharLen}
           promptNum={this.state.promptNum}
           totalPrompt={this.state.totalPrompt}
+          maxLoudnessDb={this.state.maxLoudnessDb}
         />
         <PhraseBox
           prompt={this.state.prompt}
@@ -255,6 +257,7 @@ class Record extends Component {
       blob: blob,
     });
     console.log("Processing blob:", blob);
+
     getAudioLen(this.uuid, blob)
       .then((res) => res.json())
       .then((res) =>
@@ -262,7 +265,29 @@ class Record extends Component {
           audioLen: res.data.audio_len,
         })
       );
-    // wierd hack to make sure the wav display is updated
+
+    // Calculate maximum loudness in dB
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const arrayBuffer = event.target.result;
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const channelData = audioBuffer.getChannelData(0); // Use the first channel
+      let maxAmplitude = 0;
+
+      for (let i = 0; i < channelData.length; i++) {
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+      }
+
+      const maxLoudnessDb = 20 * Math.log10(maxAmplitude);
+      this.setState({
+        maxLoudnessDb: maxLoudnessDb.toFixed(2),
+      });
+    };
+    reader.readAsArrayBuffer(blob);
+
+    // Weird hack to make sure the wav display is updated
     // don't change this unless you know what you're doing
     this.shoulddisplayWav(false);
     this.shoulddisplayWav(true);
@@ -339,6 +364,7 @@ class Record extends Component {
           displayWav: false,
           blob: undefined,
           audioLen: 0,
+          maxLoudnessDb: null,
         });
         this.requestPrompts(this.uuid);
         this.requestUserDetails(this.uuid);
@@ -357,6 +383,7 @@ class Record extends Component {
                 blob: undefined,
                 audioLen: 0,
                 backIdx: 0,
+                maxLoudnessDb: null,
               });
             } else {
               alert("There was an error in saving that audio");
@@ -371,6 +398,7 @@ class Record extends Component {
     let backIdx = this.state.backIdx + 1;
     this.setState((prevState) => ({
       backIdx: prevState.backIdx + 1,
+      maxLoudnessDb: null,
     }));
     try {
       const audio_id = await this.requestPrompts(this.uuid, backIdx); // Await the audio_id

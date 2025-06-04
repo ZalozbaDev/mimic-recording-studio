@@ -21,6 +21,11 @@ class Metrics extends Component {
         <div className="speech-rate">
           <h2>SPEECH RATE</h2>
           <div>Overall Average: {charPerSec} characters per second</div>
+          {this.props.maxLoudnessDb === null ? (
+            <React.Fragment></React.Fragment>
+          ) : (
+            <div>max Loudness (dB): {this.props.maxLoudnessDb}</div>
+          )}
         </div>
       </div>
     );
