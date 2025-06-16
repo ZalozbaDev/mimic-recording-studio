@@ -220,7 +220,7 @@ class DB:
             print(e)
             return response(False, message="Exception thrown, check logs")
 
-    # # TODO: should we add prompt in database?
+    # TODO: should we add prompt in database?
     # @staticmethod
     # def get_prompt(prompt_num: int) -> response:
     #     prompt = prompt_fs.get(prompt_num)
@@ -231,3 +231,27 @@ class DB:
     #         return response(True, data=data)
     #     else:
     #         return response(False)
+
+    @staticmethod
+    def get_last(uuid: str, backIdx: int) -> response:
+        """Retrieve and print all entries in AudioModel for a specific user."""
+        try:
+            audios = DB.AudioModel.select().where(AudioModel.user_id == uuid)
+            if backIdx > len(audios):
+                return response(
+                    False,
+                    message="Index %d is out of range for user %s" % (backIdx, uuid)
+                )
+            data = {
+                "prompt": audios[-backIdx].prompt,
+                "audio_id": audios[-backIdx].audio_id,
+            }
+            return response(True, data=data)
+        except IndexError:
+            return response(
+                False,
+                message="No audio found for user %s at index %d" % (uuid, backIdx)
+            )
+        except Exception as e:
+            print(e)
+            return response(False, message="Exception thrown, check logs")

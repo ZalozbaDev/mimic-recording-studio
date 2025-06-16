@@ -101,6 +101,28 @@ class AudioAPI:
                 print(e)
                 return response(False)
 
+    def get_audio(self, audio_id: str, uuid: str) -> response:
+        """Get audio file from filesystem based on audio_id and user uuid.
+
+        Args:
+            audio_id (str): Unique id of audio file.
+            uuid (str): Unique id of user.
+
+        Returns:
+            response: Response object containing success or failure as bool.
+                      If successful, audio data provided in data object.
+        """
+        try:
+            audio = AudioFS.get_audio(audio_id, uuid)
+            if audio:
+                return response(True, data=audio)
+            else:
+                return response(False, message="audio not found")
+        except Exception as e:
+            print(e)
+            return response(False, message="error retrieving audio")
+        
+
     def get_audio_len(self, audio: bytes):
         """Returns length of audio waveform in seconds.
 
@@ -136,7 +158,7 @@ class PromptAPI:
     def __init__(self):
         self.user_api = UserAPI()
 
-    def get_prompt(self, uuid: str) -> response:
+    def get_prompt(self, uuid: str, idx: int=0) -> response:
         """Get next prompt to be recorded.
 
         Based on uuid argument (user) the 'prompt_num' value from SQLite is selected.
@@ -152,8 +174,17 @@ class PromptAPI:
         user = self.user_api.get_user(uuid)
         if user.success:
             prompt_num = user.data["prompt_num"]
-            # res = DB.get_prompt(prompt_num)
-            res = PromptAPI.prompt_fs.get(prompt_num)
+            print(idx, prompt_num)
+            if idx == "0":
+               res = PromptAPI.prompt_fs.get(prompt_num)
+            else:
+                res = DB.get_last(uuid, int(idx))
+                if not res.success:
+                    return response(False, message=res.message)
+                print(res.data["prompt"])
+                prompt_num = PromptAPI.prompt_fs.get_idx(res.data["prompt"])
+                print(prompt_num)
+                return response(True, data={"prompt": res.data["prompt"], "audio_id": res.data["audio_id"], "prompt_num": prompt_num["idx"], "total_prompt": prompt_num["total_prompt"]})
             if res.success:
                 return response(True, data=res.data)
 

@@ -1,4 +1,4 @@
-import React, { Component } from "react";
+import React, { Component, useRef } from "react";
 import { ReactMic as Visualizer } from "react-mic";
 import Recorder from "./components/Recorder";
 import PhraseBox from "./components/PhraseBox";
@@ -12,7 +12,14 @@ import PSVG from "./assets/P.svg";
 import rightSVG from "./assets/right.svg";
 import SSVG from "./assets/S.svg";
 
-import { postAudio, getPrompt, getUser, createUser, getAudioLen } from "./api";
+import {
+  postAudio,
+  getPrompt,
+  getUser,
+  createUser,
+  getAudioLen,
+  getAudio,
+} from "./api";
 import { getUUID, getName } from "./api/localstorage";
 
 class Record extends Component {
@@ -31,7 +38,9 @@ class Record extends Component {
       totalTime: 0,
       totalCharLen: 0,
       audioLen: 0,
-      showPopup: false
+      showPopup: false,
+      backIdx: 0,
+      maxLoudnessDb: null,
     };
 
     this.name = getName();
@@ -63,6 +72,7 @@ class Record extends Component {
           totalCharLen={this.state.totalCharLen}
           promptNum={this.state.promptNum}
           totalPrompt={this.state.totalPrompt}
+          maxLoudnessDb={this.state.maxLoudnessDb}
         />
         <PhraseBox
           prompt={this.state.prompt}
@@ -85,7 +95,22 @@ class Record extends Component {
             ? "Read Now [Esc] to cancel"
             : "[Spacebar] to Start Recording [R] to review [S] to skip [->] for next"}
         </div>
+
         <div id="controls">
+          <a
+            id="btn_Play"
+            className={`btn btn-play ${
+              this.state.shouldRecord
+                ? "btn-disabled"
+                : this.state.play
+                ? "btn-disabled"
+                : null
+            } `}
+            onClick={this.jumpBack}
+          >
+            <i className="fas fa-backward ibutton" />
+            Backward
+          </a>
           <a
             id="btn_Play"
             className={`btn btn-play ${
@@ -97,7 +122,13 @@ class Record extends Component {
                 ? "btn-disabled"
                 : null
             } `}
-            onClick={this.state.shouldRecord ? () => null : this.state.play ? () => null : this.playWav}
+            onClick={
+              this.state.shouldRecord
+                ? () => null
+                : this.state.play
+                ? () => null
+                : this.playWav
+            }
           >
             <i className="fas fa-play ibutton" />
             Review
@@ -113,7 +144,13 @@ class Record extends Component {
                 ? "btn-disabled"
                 : null
             }`}
-            onClick={this.state.shouldRecord ? () => null : this.state.play ? () => null : this.onNext}
+            onClick={
+              this.state.shouldRecord
+                ? () => null
+                : this.state.play
+                ? () => null
+                : this.onNext
+            }
           >
             <i className="fas fa-forward ibutton-next" />
             Next
@@ -125,48 +162,60 @@ class Record extends Component {
 
   dismissPopup = () => {
     this.setState({
-      showPopup: false
+      showPopup: false,
     });
   };
 
-  requestPrompts = uuid => {
-    getPrompt(uuid)
-      .then(res => res.json())
-      .then(res => {
-        if (res.data.prompt === "___CORPUS_END___") {
-            this.setState({
-              shouldRecord: false,
-              prompt: "*no more phrases in corpus to record*",
-              totalPrompt: res.data.total_prompt
-            })
-          }
-        if (res.success && res.data.prompt !== "___CORPUS_END___") {
+  requestPrompts = async (uuid, idx = 0) => {
+    try {
+      const res = await getPrompt(uuid, idx).then((res) => res.json());
+      if (!res.success) {
+        console.log(
+          "Error in getting prompts. You have jumped to the end of the corpus."
+        );
+        alert(
+          "Error in getting prompts. You have jumped to the end of the corpus."
+        );
+        return null;
+      } else if (res.data.prompt === "___CORPUS_END___") {
+        this.setState({
+          shouldRecord: false,
+          prompt: "*no more phrases in corpus to record*",
+          totalPrompt: res.data.total_prompt,
+        });
+        return null;
+      } else if (res.success && res.data.prompt !== "___CORPUS_END___") {
         this.setState({
           prompt: res.data.prompt,
-          totalPrompt: res.data.total_prompt
+          totalPrompt: res.data.total_prompt,
+          promptNum: res.data.prompt_num || this.state.promptNum,
         });
-        }
-      });
+        return res.data.audio_id; // Return the audio_id
+      }
+    } catch (error) {
+      console.error("Error in requestPrompts:", error);
+      return null;
+    }
   };
 
-  requestUserDetails = uuid => {
+  requestUserDetails = (uuid) => {
     getUser(uuid)
-      .then(res => res.json())
-      .then(res => {
+      .then((res) => res.json())
+      .then((res) => {
         if (res.success) {
           this.setState({
             userName: res.data.user_name,
             language: res.data.language,
             promptNum: res.data.prompt_num,
             totalTime: res.data.total_time_spoken,
-            totalCharLen: res.data.len_char_spoken
+            totalCharLen: res.data.len_char_spoken,
           });
           this.requestPrompts(this.uuid);
         } else {
           if (this.uuid) {
             createUser(this.uuid, this.name)
-              .then(res => res.json())
-              .then(res => {
+              .then((res) => res.json())
+              .then((res) => {
                 if (res.success) {
                   this.setState({ userCreated: true });
                   this.requestPrompts(this.uuid);
@@ -181,15 +230,18 @@ class Record extends Component {
       });
   };
 
-  renderWave = () => (
-    <Wave
-      className="wavedisplay"
-      waveColor="#FD9E66"
-      blob={this.state.blob}
-      play={this.state.play}
-      onFinish={this.stopWav}
-    />
-  );
+  renderWave = () =>
+    this.state.blob.type !== undefined ? (
+      <Wave
+        className="wavedisplay"
+        waveColor="#FD9E66"
+        blob={this.state.blob}
+        play={this.state.play}
+        onFinish={this.stopWav}
+      />
+    ) : (
+      <audio id="audioPlayback" controls />
+    );
 
   renderVisualizer = () => (
     <Visualizer
@@ -200,27 +252,54 @@ class Record extends Component {
     />
   );
 
-  processBlob = blob => {
+  processBlob = (blob) => {
+    this.setState({
+      blob: blob,
+    });
+    console.log("Processing blob:", blob);
+
     getAudioLen(this.uuid, blob)
-      .then(res => res.json())
-      .then(res =>
+      .then((res) => res.json())
+      .then((res) =>
         this.setState({
-          audioLen: res.data.audio_len
+          audioLen: res.data.audio_len,
         })
       );
-    this.setState({
-      blob: blob
-    });
+
+    // Calculate maximum loudness in dB
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const arrayBuffer = event.target.result;
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const channelData = audioBuffer.getChannelData(0); // Use the first channel
+      let maxAmplitude = 0;
+
+      for (let i = 0; i < channelData.length; i++) {
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+      }
+
+      const maxLoudnessDb = 20 * Math.log10(maxAmplitude);
+      this.setState({
+        maxLoudnessDb: maxLoudnessDb.toFixed(2),
+      });
+    };
+    reader.readAsArrayBuffer(blob);
+
+    // Weird hack to make sure the wav display is updated
+    // don't change this unless you know what you're doing
+    this.shoulddisplayWav(false);
     this.shoulddisplayWav(true);
   };
 
-  shoulddisplayWav = bool => this.setState({ displayWav: bool });
+  shoulddisplayWav = (bool) => this.setState({ displayWav: bool });
 
   playWav = () => this.setState({ play: true });
 
   stopWav = () => this.setState({ play: false });
 
-  handleKeyDown = event => {
+  handleKeyDown = (event) => {
     // space bar code
     if (event.keyCode === 32) {
       if (!this.state.shouldRecord) {
@@ -242,7 +321,7 @@ class Record extends Component {
         totalTime: 0,
         totalCharLen: 0,
         audioLen: 0,
-        play: false
+        play: false,
       });
     }
 
@@ -258,10 +337,10 @@ class Record extends Component {
 
     // next prompt
     if (event.keyCode === 39) {
-        if (!this.state.play) {
-          this.onNext();
-        }
-     }
+      if (!this.state.play) {
+        this.onNext();
+      }
+    }
   };
 
   recordHandler = () => {
@@ -269,7 +348,7 @@ class Record extends Component {
       this.setState((state, props) => {
         return {
           shouldRecord: true,
-          play: false
+          play: false,
         };
       });
     }, 500);
@@ -277,55 +356,105 @@ class Record extends Component {
 
   onNext = () => {
     if (this.state.blob !== undefined) {
-      postAudio(this.state.blob, this.state.prompt, this.uuid)
-        .then(res => res.json())
-        .then(res => {
-          if (res.success) {
-            this.setState({ displayWav: false });
-            this.requestPrompts(this.uuid);
-            this.requestUserDetails(this.uuid);
-            this.setState({
-              blob: undefined,
-              audioLen: 0
-            });
-          } else {
-            alert("There was an error in saving that audio");
-          }
-        })
-        .catch(err => console.log(err));
+      if (this.state.backIdx > 0 && this.state.blob.type === undefined) {
+        console.log(this.state.backIdx);
+        console.log(this.state.blob);
+        this.setState({
+          backIdx: 0,
+          displayWav: false,
+          blob: undefined,
+          audioLen: 0,
+          maxLoudnessDb: null,
+        });
+        this.requestPrompts(this.uuid);
+        this.requestUserDetails(this.uuid);
+      } else {
+        console.log("Posting audio:", this.state.blob);
+        console.log("Prompt:", this.state.prompt);
+        console.log("UUID:", this.uuid);
+        postAudio(this.state.blob, this.state.prompt, this.uuid)
+          .then((res) => res.json())
+          .then((res) => {
+            if (res.success) {
+              this.setState({ displayWav: false });
+              this.requestPrompts(this.uuid);
+              this.requestUserDetails(this.uuid);
+              this.setState({
+                blob: undefined,
+                audioLen: 0,
+                backIdx: 0,
+                maxLoudnessDb: null,
+              });
+            } else {
+              alert("There was an error in saving that audio");
+            }
+          })
+          .catch((err) => console.log(err));
+      }
+    }
+  };
+
+  jumpBack = async () => {
+    let backIdx = this.state.backIdx + 1;
+    this.setState((prevState) => ({
+      backIdx: prevState.backIdx + 1,
+      maxLoudnessDb: null,
+    }));
+    try {
+      const audio_id = await this.requestPrompts(this.uuid, backIdx); // Await the audio_id
+      if (audio_id) {
+        const res = await getAudio(audio_id, this.uuid);
+        const data = await res.json();
+        const base64 = data.data;
+        const mime = data.mime || "audio/wav";
+        const binary = atob(base64);
+        const array = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
+        const blob = new Blob([array], { type: mime });
+        const url = URL.createObjectURL(blob);
+        this.setState({
+          displayWav: true,
+          blob: url,
+        });
+        let audio_player = document.getElementById("audioPlayback");
+        audio_player.src = url;
+        audio_player.play();
+      }
+    } catch (error) {
+      console.error("Error in jumpBack:", error);
     }
   };
 
   skipCurrent = () => {
     // Send static text '___SKIPPED___' as prefix to original phrase to backend API for being filtered out.
     postAudio("", "___SKIPPED___" + this.state.prompt, this.uuid)
-    .then(res => res.json())
-    .then(res => {
-      if (res.success) {
-        this.setState({ displayWav: false });
-        this.requestPrompts(this.uuid);
-        this.requestUserDetails(this.uuid);
-        this.setState({
-          blob: undefined,
-          audioLen: 0
-        });
-      } else {
-        alert("There was an error in saving that audio");
-      }
-    })
-    .catch(err => console.log(err));
+      .then((res) => res.json())
+      .then((res) => {
+        if (res.success) {
+          this.setState({ displayWav: false });
+          this.requestPrompts(this.uuid);
+          this.requestUserDetails(this.uuid);
+          this.setState({
+            blob: undefined,
+            audioLen: 0,
+          });
+        } else {
+          alert("There was an error in saving that audio");
+        }
+      })
+      .catch((err) => console.log(err));
   };
 
-  silenceDetection = stream => {
+  silenceDetection = (stream) => {
     const options = {
       interval: "150",
-      threshold: -80
+      threshold: -80,
     };
     const speechEvents = hark(stream, options);
 
     speechEvents.on("stopped_speaking", () => {
       this.setState({
-        shouldRecord: false
+        shouldRecord: false,
       });
     });
   };
@@ -358,7 +487,8 @@ class TopContainer extends Component {
                 next prompt
               </li>
               <li>
-                <img src={SSVG} className="key-icon" alt="->" /> skip current prompt
+                <img src={SSVG} className="key-icon" alt="->" /> skip current
+                prompt
               </li>
             </ul>
           </div>
@@ -367,7 +497,9 @@ class TopContainer extends Component {
               <div>
                 <h2>RECORDER</h2>
                 &nbsp;
-                <span id="sessionName">{this.props.userName}_{this.props.userID}</span>
+                <span id="sessionName">
+                  {this.props.userName}_{this.props.userID}
+                </span>
               </div>
               <div className="btn-restart" />
             </div>

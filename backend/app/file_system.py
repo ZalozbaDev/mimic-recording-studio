@@ -4,6 +4,7 @@ import os
 import csv
 import hashlib
 import subprocess
+import base64
 import os
 from subprocess import DEVNULL
 from .protocol import response
@@ -107,6 +108,22 @@ class AudioFS:
     @staticmethod
     def create_file_name(prompt: str):
         return hashlib.md5(prompt.encode("utf-8")).hexdigest()
+    
+    @staticmethod
+    def get_audio(audio_id: str, uuid: str) -> str:
+        """Get audio file from disk and encode it in Base64.
+
+        Args:
+            audio_id (str): ID of the audio file.
+            uuid (str): User ID.
+
+        Returns:
+            str: Base64-encoded audio data.
+        """
+        wav_audio_path = os.path.join("audio_files", uuid, f"{audio_id}.wav")
+        with open(wav_audio_path, 'rb') as f:
+            audio_data = f.read()
+        return base64.b64encode(audio_data).decode('utf-8')
 
 
 class PromptsFS:
@@ -139,3 +156,17 @@ class PromptsFS:
                 "total_prompt": 0
             }            
         return response(True, data=d)
+    
+    def get_idx(self, prompt: str) -> int:
+        """Get index of prompt in corpus.
+
+        Args:
+            prompt (str): Text phrase from corpus.
+
+        Returns:
+            int: Index of prompt in corpus.
+        """
+        try:
+            return {"idx": self.data.index(prompt), "total_prompt": len(self.data)}
+        except ValueError:
+            return -1
