@@ -135,7 +135,7 @@ class DB:
             )
 
     @staticmethod
-    def update_user_metrics(uuid: str, time: float, char_len: int) -> response:
+    def update_user_metrics(uuid: str, time: float, char_len: int, updating_old: bool) -> response:
         """Update recording metrics for specific user.
 
         Will be called after every recording to update metrics
@@ -149,15 +149,26 @@ class DB:
         Returns:
             response: True, if user metrics could be updated successfully.
         """
+        print(updating_old)
         try:
-            query = UserModel \
-                .update(
-                    prompt_num=UserModel.prompt_num + 1,
-                    total_time_spoken=UserModel.total_time_spoken + time,
-                    len_char_spoken=UserModel.len_char_spoken + char_len
-                ) \
-                .where(uuid == uuid)
-            query.execute()
+            if updating_old:
+                query = UserModel \
+                    .update(
+                        prompt_num=UserModel.prompt_num,
+                        total_time_spoken=UserModel.total_time_spoken,
+                        len_char_spoken=UserModel.len_char_spoken
+                    ) \
+                    .where(UserModel.uuid == uuid)
+                query.execute()
+            else:
+                query = UserModel \
+                    .update(
+                        prompt_num=UserModel.prompt_num + 1,
+                        total_time_spoken=UserModel.total_time_spoken + time,
+                        len_char_spoken=UserModel.len_char_spoken + char_len
+                    ) \
+                    .where(uuid == uuid)
+                query.execute()
             return response(True)
         except Exception as e:
             print(e)
@@ -237,14 +248,23 @@ class DB:
         """Retrieve and print all entries in AudioModel for a specific user."""
         try:
             audios = DB.AudioModel.select().where(AudioModel.user_id == uuid)
-            if backIdx > len(audios):
+
+            # Filter out multiple instances of the same prompt
+            unique_audios = []
+            seen_prompts = set()
+            for audio in audios:
+                if audio.prompt not in seen_prompts:
+                    unique_audios.append(audio)
+                    seen_prompts.add(audio.prompt)
+
+            if backIdx > len(unique_audios):
                 return response(
                     False,
                     message="Index %d is out of range for user %s" % (backIdx, uuid)
                 )
             data = {
-                "prompt": audios[-backIdx].prompt,
-                "audio_id": audios[-backIdx].audio_id,
+                "prompt": unique_audios[-backIdx].prompt,
+                "audio_id": unique_audios[-backIdx].audio_id,
             }
             return response(True, data=data)
         except IndexError:

@@ -1,13 +1,17 @@
 const apiRoot = "http://localhost:5000/";
 
-export const postAudio = (audio, prompt, uuid) => {
-  return fetch(apiRoot + `api/audio/?uuid=${uuid}&prompt=${prompt}`, {
-    method: "POST",
-    body: audio,
-    headers: {
-      "Content-Type": "audio/wav",
-    },
-  });
+export const postAudio = (audio, prompt, uuid, updating_old) => {
+  return fetch(
+    apiRoot +
+      `api/audio/?uuid=${uuid}&prompt=${prompt}&updating_old=${updating_old}`,
+    {
+      method: "POST",
+      body: audio,
+      headers: {
+        "Content-Type": "audio/wav",
+      },
+    }
+  );
 };
 
 export const getPrompt = (uuid, idx) => {
