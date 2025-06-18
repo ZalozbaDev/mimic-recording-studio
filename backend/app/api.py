@@ -50,7 +50,7 @@ class UserAPI:
 class AudioAPI:
     """API to save, get, and extract all audio as zip"""
 
-    def save_audio(self, audio: bytes, uuid: str, prompt: str):
+    def save_audio(self, audio: bytes, uuid: str, prompt: str, updating_old: bool = False) -> response:
         """Save frontend submitted audio recording to filesystem and database.
 
         All files are save with their unique id as the filename.
@@ -67,7 +67,6 @@ class AudioAPI:
             response: Response object containing success or failure as bool
         """
         user_audio_dir = AudioFS.get_audio_path(uuid)
-        
         if prompt[:13] == "___SKIPPED___":
             res = DB.skipPhrase(uuid)
 
@@ -92,7 +91,7 @@ class AudioAPI:
                 if res.success:
                     audio_len = Audio.get_audio_len(trimmed_sound)
                     char_len = len(prompt)
-                    res = DB.update_user_metrics(uuid, audio_len, char_len)
+                    res = DB.update_user_metrics(uuid, audio_len, char_len, updating_old)
                     if res.success:
                         return response(True)
                 return response(False)
@@ -174,18 +173,15 @@ class PromptAPI:
         user = self.user_api.get_user(uuid)
         if user.success:
             prompt_num = user.data["prompt_num"]
-            print(idx, prompt_num)
             if idx == "0":
                res = PromptAPI.prompt_fs.get(prompt_num)
             else:
                 res = DB.get_last(uuid, int(idx))
                 if not res.success:
                     return response(False, message=res.message)
-                print(res.data["prompt"])
                 prompt_num = PromptAPI.prompt_fs.get_idx(res.data["prompt"])
-                print(prompt_num)
                 return response(True, data={"prompt": res.data["prompt"], "audio_id": res.data["audio_id"], "prompt_num": prompt_num["idx"], "total_prompt": prompt_num["total_prompt"]})
             if res.success:
-                return response(True, data=res.data)
+                return response(True, data={"prompt": res.data["prompt"], "prompt_num": prompt_num, "total_prompt": res.data["total_prompt"]})
 
         return response(False)

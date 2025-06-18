@@ -188,7 +188,7 @@ class Record extends Component {
         this.setState({
           prompt: res.data.prompt,
           totalPrompt: res.data.total_prompt,
-          promptNum: res.data.prompt_num || this.state.promptNum,
+          promptNum: res.data.prompt_num,
         });
         return res.data.audio_id; // Return the audio_id
       }
@@ -369,10 +369,13 @@ class Record extends Component {
         this.requestPrompts(this.uuid);
         this.requestUserDetails(this.uuid);
       } else {
-        console.log("Posting audio:", this.state.blob);
-        console.log("Prompt:", this.state.prompt);
-        console.log("UUID:", this.uuid);
-        postAudio(this.state.blob, this.state.prompt, this.uuid)
+        console.log(this.state.backIdx != 0);
+        postAudio(
+          this.state.blob,
+          this.state.prompt,
+          this.uuid,
+          this.state.backIdx != 0
+        )
           .then((res) => res.json())
           .then((res) => {
             if (res.success) {
