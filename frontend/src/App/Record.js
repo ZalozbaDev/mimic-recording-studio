@@ -1,4 +1,4 @@
-import React, { Component, useRef } from "react";
+import React, { Component } from "react";
 import { ReactMic as Visualizer } from "react-mic";
 import Recorder from "./components/Recorder";
 import PhraseBox from "./components/PhraseBox";
@@ -55,6 +55,28 @@ class Record extends Component {
   componentWillUnmount() {
     document.removeEventListener("keydown", this.handleKeyDown, false);
   }
+
+  computeMaxLoudness = (blob) => {
+    const audioContext = new (window.AudioContext ||
+      window.webkitAudioContext)();
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const arrayBuffer = event.target.result;
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      const channelData = audioBuffer.getChannelData(0); // Use the first channel
+      let maxAmplitude = 0;
+
+      for (let i = 0; i < channelData.length; i++) {
+        maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+      }
+
+      const maxLoudnessDb = 20 * Math.log10(maxAmplitude);
+      this.setState({
+        maxLoudnessDb: maxLoudnessDb.toFixed(2),
+      });
+    };
+    reader.readAsArrayBuffer(blob);
+  };
 
   render() {
     return (
@@ -256,7 +278,6 @@ class Record extends Component {
     this.setState({
       blob: blob,
     });
-    console.log("Processing blob:", blob);
 
     getAudioLen(this.uuid, blob)
       .then((res) => res.json())
@@ -267,25 +288,7 @@ class Record extends Component {
       );
 
     // Calculate maximum loudness in dB
-    const audioContext = new (window.AudioContext ||
-      window.webkitAudioContext)();
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const arrayBuffer = event.target.result;
-      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-      const channelData = audioBuffer.getChannelData(0); // Use the first channel
-      let maxAmplitude = 0;
-
-      for (let i = 0; i < channelData.length; i++) {
-        maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
-      }
-
-      const maxLoudnessDb = 20 * Math.log10(maxAmplitude);
-      this.setState({
-        maxLoudnessDb: maxLoudnessDb.toFixed(2),
-      });
-    };
-    reader.readAsArrayBuffer(blob);
+    this.computeMaxLoudness(blob);
 
     // Weird hack to make sure the wav display is updated
     // don't change this unless you know what you're doing
@@ -357,8 +360,6 @@ class Record extends Component {
   onNext = () => {
     if (this.state.blob !== undefined) {
       if (this.state.backIdx > 0 && this.state.blob.type === undefined) {
-        console.log(this.state.backIdx);
-        console.log(this.state.blob);
         this.setState({
           backIdx: 0,
           displayWav: false,
@@ -369,12 +370,11 @@ class Record extends Component {
         this.requestPrompts(this.uuid);
         this.requestUserDetails(this.uuid);
       } else {
-        console.log(this.state.backIdx != 0);
         postAudio(
           this.state.blob,
           this.state.prompt,
           this.uuid,
-          this.state.backIdx != 0
+          this.state.backIdx !== 0
         )
           .then((res) => res.json())
           .then((res) => {
@@ -414,6 +414,7 @@ class Record extends Component {
         const array = new Uint8Array(binary.length);
         for (let i = 0; i < binary.length; i++) array[i] = binary.charCodeAt(i);
         const blob = new Blob([array], { type: mime });
+        this.computeMaxLoudness(blob);
         const url = URL.createObjectURL(blob);
         this.setState({
           displayWav: true,

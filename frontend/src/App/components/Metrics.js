@@ -26,6 +26,13 @@ class Metrics extends Component {
           ) : (
             <div>max Loudness (dB): {this.props.maxLoudnessDb}</div>
           )}
+          {this.props.maxLoudnessDb !== null &&
+            (this.props.maxLoudnessDb > -10 ||
+              this.props.maxLoudnessDb < -30) && (
+              <div style={{ color: "red" }}>
+                Warning: Loudness out of range!
+              </div>
+            )}
         </div>
       </div>
     );
