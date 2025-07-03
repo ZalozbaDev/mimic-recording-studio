@@ -44,8 +44,8 @@ class Users(MethodView):
 class Audio(MethodView):
     """Audio class saving audio data or getting audio length."""
 
-    def save_audio(self, uuid: str, prompt: str, data: bytes, updating_old: bool) -> jsonify:
-        res = audio_api.save_audio(data, uuid, prompt, updating_old)
+    def save_audio(self, uuid: str, prompt: str, data: bytes, updating_old: bool, sample_rate, sample_size, channels) -> jsonify:
+        res = audio_api.save_audio(data, uuid, prompt, sample_rate, sample_size, channels, updating_old)
         if res.success:
             return jsonify(success=True, message="sucessfully saved audio")
         else:
@@ -74,8 +74,12 @@ class Audio(MethodView):
         prompt = request.args.get('prompt')
         get_len = request.args.get('get_len')
         updating_old = request.args.get('updating_old', 'false').lower() == 'true'
+        sample_rate = request.args.get('sample_rate')
+        sample_size = request.args.get('sample_size')
+        channels = request.args.get('channels')
+        print(channels, sample_rate, sample_size)
         if uuid and prompt:
-            return self.save_audio(uuid, prompt, data, updating_old)
+            return self.save_audio(uuid, prompt, data, updating_old, sample_rate, sample_size, channels)
         elif uuid and get_len:
             return self.get_audio_len(data)
         else:
