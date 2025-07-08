@@ -39,7 +39,7 @@ class AudioFS:
     """API Class for audio handling."""
 
     @staticmethod
-    def save_audio(path: str, audio: bytes):
+    def save_audio(path: str, audio: bytes, sample_rate: int = 44100, sample_size: int = 16, channels: int = 2):
         """Save audio after ffmpeg conversion (stereo, samplerate 44.100Hz) to disk.
 
         Args:
@@ -50,13 +50,12 @@ class AudioFS:
 
         with open(webm_file_name, 'wb+') as f:
             f.write(audio)
-        
+        print(channels, sample_rate, sample_size)
         subprocess.call(
-            'ffmpeg -i {} -ab 160k -ac 2 -ar 44100 -vn {}.wav -y'.format(
-                webm_file_name, path
-            ),
+            f'ffmpeg -i {webm_file_name} -ab 160k -ac {channels} -ar {sample_rate} -vn {path}.wav -y',
             shell=True
         )
+        
         os.remove(webm_file_name)
 
     @staticmethod

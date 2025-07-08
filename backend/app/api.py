@@ -50,7 +50,7 @@ class UserAPI:
 class AudioAPI:
     """API to save, get, and extract all audio as zip"""
 
-    def save_audio(self, audio: bytes, uuid: str, prompt: str, updating_old: bool = False) -> response:
+    def save_audio(self, audio: bytes, uuid: str, prompt: str, sample_rate, sample_size, channels, updating_old: bool = False) -> response:
         """Save frontend submitted audio recording to filesystem and database.
 
         All files are save with their unique id as the filename.
@@ -80,7 +80,13 @@ class AudioAPI:
 
             try:
                 # save wav file. This step is needed before trimming.
-                AudioFS.save_audio(path, audio)
+                if channels == "mono":
+                    channels = 1
+                elif channels == "stereo":
+                    channels = 2
+                else:
+                    channels = 1
+                AudioFS.save_audio(path, audio, sample_rate, sample_size, channels)
                 AudioFS.save_meta_data(user_audio_dir, uuid, wav_file_id, prompt)
 
                 # trim silence and save

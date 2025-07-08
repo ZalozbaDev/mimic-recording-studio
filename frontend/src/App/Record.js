@@ -25,7 +25,6 @@ import { getUUID, getName } from "./api/localstorage";
 class Record extends Component {
   constructor(props) {
     super(props);
-
     this.state = {
       userCreated: false,
       shouldRecord: false,
@@ -41,6 +40,13 @@ class Record extends Component {
       showPopup: false,
       backIdx: 0,
       maxLoudnessDb: null,
+      sampleRate: localStorage.getItem("sampleRate")
+        ? parseInt(localStorage.getItem("sampleRate"), 10)
+        : 44100,
+      sampleSize: localStorage.getItem("sampleSize")
+        ? parseInt(localStorage.getItem("sampleSize"), 10)
+        : 16,
+      channels: localStorage.getItem("channels") || "mono",
     };
 
     this.name = getName();
@@ -178,6 +184,78 @@ class Record extends Component {
             Next
           </a>
         </div>
+
+        <div id="settings">
+          <h2>Recording Settings</h2>
+          <label>
+            Sample Rate:
+            <input
+              type="number"
+              value={this.state.sampleRate}
+              onChange={(e) => this.setState({ sampleRate: e.target.value })}
+            />
+          </label>
+          <label>
+            Sample Size:
+            <input
+              type="number"
+              value={this.state.sampleSize}
+              onChange={(e) => this.setState({ sampleSize: e.target.value })}
+            />
+          </label>
+          <label>
+            Channels:
+            <select
+              value={this.state.channels}
+              onChange={(e) => this.setState({ channels: e.target.value })}
+            >
+              <option value="mono">Mono</option>
+              <option value="stereo">Stereo</option>
+            </select>
+          </label>
+          <button
+            onClick={this.handleSettingsChange}
+            className="btn"
+            style={{ maxWidth: "300px" }}
+          >
+            Save Settings
+          </button>
+        </div>
+
+        <style>
+          {`
+          #settings {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+          }
+
+          #settings h2 {
+            margin-bottom: 15px;
+          }
+
+          #settings label {
+            display: block;
+            margin-bottom: 10px;
+          }
+
+          #settings input,
+          #settings select {
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            width: 100%;
+            box-sizing: border-box;
+          }
+
+          #settings select {
+            background-color: #fff;
+          }
+        `}
+        </style>
       </div>
     );
   }
@@ -374,7 +452,10 @@ class Record extends Component {
           this.state.blob,
           this.state.prompt,
           this.uuid,
-          this.state.backIdx !== 0
+          this.state.backIdx !== 0,
+          this.state.sampleRate,
+          this.state.sampleSize,
+          this.state.channels
         )
           .then((res) => res.json())
           .then((res) => {
@@ -461,6 +542,13 @@ class Record extends Component {
         shouldRecord: false,
       });
     });
+  };
+
+  handleSettingsChange = () => {
+    localStorage.setItem("sampleRate", this.state.sampleRate);
+    localStorage.setItem("sampleSize", this.state.sampleSize);
+    localStorage.setItem("channels", this.state.channels);
+    window.location.reload();
   };
 }
 
