@@ -189,19 +189,30 @@ class Record extends Component {
           <h2>Recording Settings</h2>
           <label>
             Sample Rate:
-            <input
-              type="number"
+            <select
               value={this.state.sampleRate}
-              onChange={(e) => this.setState({ sampleRate: e.target.value })}
-            />
+              onChange={(e) =>
+                this.setState({ sampleRate: parseInt(e.target.value, 10) })
+              }
+            >
+              <option value={48000}>48000</option>
+              <option value={44100}>44100</option>
+              <option value={32000}>32000</option>
+              <option value={22050}>22050</option>
+              <option value={16000}>16000</option>
+            </select>
           </label>
           <label>
             Sample Size:
-            <input
-              type="number"
+            <select
               value={this.state.sampleSize}
-              onChange={(e) => this.setState({ sampleSize: e.target.value })}
-            />
+              onChange={(e) =>
+                this.setState({ sampleSize: parseInt(e.target.value, 10) })
+              }
+            >
+              <option value={16}>16</option>
+              <option value={8}>8</option>
+            </select>
           </label>
           <label>
             Channels:
@@ -224,37 +235,37 @@ class Record extends Component {
 
         <style>
           {`
-          #settings {
-            margin: 20px;
-            padding: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f9f9f9;
-          }
+      #settings {
+      margin: 20px;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      background-color: #f9f9f9;
+      }
 
-          #settings h2 {
-            margin-bottom: 15px;
-          }
+      #settings h2 {
+      margin-bottom: 15px;
+      }
 
-          #settings label {
-            display: block;
-            margin-bottom: 10px;
-          }
+      #settings label {
+      display: block;
+      margin-bottom: 10px;
+      }
 
-          #settings input,
-          #settings select {
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            width: 100%;
-            box-sizing: border-box;
-          }
+      #settings input,
+      #settings select {
+      padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      width: 100%;
+      box-sizing: border-box;
+      }
 
-          #settings select {
-            background-color: #fff;
-          }
-        `}
+      #settings select {
+      background-color: #fff;
+      }
+      `}
         </style>
       </div>
     );
