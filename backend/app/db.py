@@ -149,7 +149,6 @@ class DB:
         Returns:
             response: True, if user metrics could be updated successfully.
         """
-        print(updating_old)
         try:
             if updating_old:
                 query = UserModel \
@@ -167,7 +166,7 @@ class DB:
                         total_time_spoken=UserModel.total_time_spoken + time,
                         len_char_spoken=UserModel.len_char_spoken + char_len
                     ) \
-                    .where(uuid == uuid)
+                    .where(UserModel.uuid == uuid)
                 query.execute()
             return response(True)
         except Exception as e:

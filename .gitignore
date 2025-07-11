@@ -35,3 +35,4 @@ build/
 
 # corpus
 *.csv
+.env

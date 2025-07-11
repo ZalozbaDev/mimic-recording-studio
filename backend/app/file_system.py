@@ -50,7 +50,6 @@ class AudioFS:
 
         with open(webm_file_name, 'wb+') as f:
             f.write(audio)
-        print(channels, sample_rate, sample_size)
         subprocess.call(
             f'ffmpeg -i {webm_file_name} -ab 160k -ac {channels} -ar {sample_rate} -vn {path}.wav -y',
             shell=True

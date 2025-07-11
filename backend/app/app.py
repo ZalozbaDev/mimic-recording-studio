@@ -77,7 +77,6 @@ class Audio(MethodView):
         sample_rate = request.args.get('sample_rate')
         sample_size = request.args.get('sample_size')
         channels = request.args.get('channels')
-        print(channels, sample_rate, sample_size)
         if uuid and prompt:
             return self.save_audio(uuid, prompt, data, updating_old, sample_rate, sample_size, channels)
         elif uuid and get_len:
